@@ -17,24 +17,39 @@ interface ChatbotState {
   inputValue: string;
   inputHtml: string;
   isSending: boolean;
+  contrastMode: boolean;
+  isHighContrast: boolean;
 }
 
 export class ChatbotComponent extends React.Component<ChatbotProps, ChatbotState> {
   private messagesEndRef: React.RefObject<HTMLDivElement> = React.createRef();
   private editableRef: React.RefObject<HTMLDivElement> = React.createRef();
 
+  // ✅ HARD-CODED API KEY
+  private hardcodedApiKey: string = "YOUR_API_KEY_HERE";
+
   constructor(props: ChatbotProps) {
     super(props);
     this.state = {
       messages: [
-        { speaker: "bot", text: "👋 Hi there! I’m your insights assistant. What would you like to explore today?" }
+        { speaker: "bot", text: "👋 Hi there! What would you like to explore today?" }
       ],
       inputValue: "",
       inputHtml: "",
-      isSending: false
+      isSending: false,
+      contrastMode: false,
+      isHighContrast: false
     };
   }
 
+  toggleHighContrast = () => {
+    this.setState(
+      prev => ({ isHighContrast: !prev.isHighContrast }),
+      () => {
+        document.body.classList.toggle("high-contrast", this.state.isHighContrast);
+      }
+    );
+  };
   handleEditableInput = () => {
     if (!this.editableRef.current) return;
     const html = this.editableRef.current.innerHTML || "";
@@ -57,8 +72,9 @@ export class ChatbotComponent extends React.Component<ChatbotProps, ChatbotState
     setTimeout(() => this.handleEditableInput(), 0);
   };
 
-  handleSend = async () => {
+handleSend = async () => {
     const { inputValue, inputHtml } = this.state;
+
     if (!inputValue.trim()) return;
 
     this.setState(state => ({
@@ -76,9 +92,33 @@ export class ChatbotComponent extends React.Component<ChatbotProps, ChatbotState
 
       const isGreeting = /\b(?:hi|hello|hey)\b/i.test(normalized);
       if (isGreeting) {
-        answer = "Hello! I’m your insights assistant 👋";
-      } else {
-        answer = "The API should be set up to handle your request.";
+        answer = "Hello! What can I help you with today? 👋";
+      } 
+      else {
+        // ███ MASK API KEY (only last 4 visible)
+        const maskedKey = this.hardcodedApiKey
+          ? this.hardcodedApiKey.replace(/.(?=.{4})/g, "*")
+          : "N/A";
+
+        try {
+          if (!this.props.sendQuery) {
+            throw new Error("API function not available");
+          }
+
+          // Real API call
+          const response = await this.props.sendQuery(inputValue);
+
+          console.log("sendQuery returned:", response);
+
+          answer = response;
+        } 
+        catch (apiError) {
+          console.error("API ERROR:", apiError);
+
+          answer =
+            `⚠️ Unable to connect to API.\n` +
+            `Please enable your API configuration.\n`;
+        }
       }
 
       this.setState(state => ({
@@ -87,7 +127,7 @@ export class ChatbotComponent extends React.Component<ChatbotProps, ChatbotState
       }));
     } catch {
       this.setState(state => ({
-        messages: [...state.messages, { speaker: "bot", text: "⚠️ Oops! Something went wrong while processing." }],
+        messages: [...state.messages, { speaker: "bot", text: "⚠️ Oops! Something went wrong." }],
         isSending: false
       }));
     }
