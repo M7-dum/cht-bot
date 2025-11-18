@@ -1,35 +1,29 @@
 "use strict";
 
-import { formattingSettings } from "powerbi-visuals-utils-formattingmodel";
+import * as React from "react";
+import "./visual.less";
+import * as ReactDOM from "react-dom/client";
+import powerbi from "powerbi-visuals-api";
+import IVisual = powerbi.extensibility.visual.IVisual;
+import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
+import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
+import ChatbotComponent from "./ChatbotComponent";
 
-import FormattingSettingsCard = formattingSettings.SimpleCard;
-import FormattingSettingsSlice = formattingSettings.Slice;
-import FormattingSettingsModel = formattingSettings.Model;
-import TextInput = formattingSettings.TextInput;
+export class Visual implements IVisual {
+  private target: HTMLElement;
+  private reactRoot: ReactDOM.Root;
 
-/**
- * Data Point Formatting Card
- */
-class ApiCardSettings extends FormattingSettingsCard {
-    apiUrl = new TextInput({
-        name: "apiUrl",
-        displayName: "API URL",
-        placeholder: "https://...",
-        value: ""
-    });
+  constructor(options: VisualConstructorOptions) {
+    this.target = options.element;
+    this.reactRoot = ReactDOM.createRoot(this.target);
+    this.reactRoot.render(<ChatbotLauncher />);
+  }
 
-    name: string = "api";
-    displayName: string = "Chat Settings";
-    slices: Array<FormattingSettingsSlice> = [this.apiUrl];
-}
+  public update(options: VisualUpdateOptions) {
+    // Optionally handle data updates here if needed
+  }
 
-/**
-* visual settings model class
-*
-*/
-export class VisualFormattingSettingsModel extends FormattingSettingsModel {
-    // Create formatting settings model formatting cards
-    apiCard = new ApiCardSettings();
-
-    cards = [this.apiCard];
+  public destroy(): void {
+    this.reactRoot.unmount();
+  }
 }
