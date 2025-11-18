@@ -109,6 +109,16 @@ export class ChatbotComponent extends React.Component<ChatbotProps, ChatbotState
   render() {
     return (
       <div className="chatbot-container" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+        <div className="chatbot-popup-header">
+            <span>Insights Assistant</span>
+            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            <button
+                className="contrast-toggle-btn"
+                onClick={toggleHighContrast}
+                title="Toggle High Contrast Mode"
+              >
+                {isHighContrast ? "🌙" : "☀️"}
+              </button>  
         <div className="messages">
           {this.state.messages.map((m, i) => (
             <div key={i} className={`message ${m.speaker}`}>
