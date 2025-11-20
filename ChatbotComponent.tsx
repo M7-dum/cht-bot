@@ -1,4 +1,7 @@
 import * as React from "react";
+import { LuBot } from "react-icons/lu";
+import axios from "axios";
+import Markdown from "react-markdown";
 
 interface Message {
   speaker: "user" | "bot";
@@ -22,11 +25,11 @@ interface ChatbotState {
 }
 
 export class ChatbotComponent extends React.Component<ChatbotProps, ChatbotState> {
-  private messagesEndRef: React.RefObject<HTMLDivElement> = React.createRef();
-  private editableRef: React.RefObject<HTMLDivElement> = React.createRef();
+  private messagesEndRef: React.RefObject<HTMLDivElement | null> = React.createRef();
+  private editableRef: React.RefObject<HTMLDivElement | null> = React.createRef();
 
-  // ✅ HARD-CODED API KEY
-  private hardcodedApiKey: string = "YOUR_API_KEY_HERE";
+  private hardcodedApiKey: string =
+    " API KEY";
 
   constructor(props: ChatbotProps) {
     super(props);
@@ -50,6 +53,7 @@ export class ChatbotComponent extends React.Component<ChatbotProps, ChatbotState
       }
     );
   };
+
   handleEditableInput = () => {
     if (!this.editableRef.current) return;
     const html = this.editableRef.current.innerHTML || "";
@@ -72,13 +76,16 @@ export class ChatbotComponent extends React.Component<ChatbotProps, ChatbotState
     setTimeout(() => this.handleEditableInput(), 0);
   };
 
-handleSend = async () => {
+  handleSend = async () => {
     const { inputValue, inputHtml } = this.state;
 
     if (!inputValue.trim()) return;
 
     this.setState(state => ({
-      messages: [...state.messages, { speaker: "user", text: inputValue, html: inputHtml || undefined }],
+      messages: [
+        ...state.messages,
+        { speaker: "user", text: inputValue, html: inputHtml || undefined }
+      ],
       inputValue: "",
       inputHtml: "",
       isSending: true
@@ -93,28 +100,28 @@ handleSend = async () => {
       const isGreeting = /\b(?:hi|hello|hey)\b/i.test(normalized);
       if (isGreeting) {
         answer = "Hello! What can I help you with today? 👋";
-      } 
-      else {
-        // ███ MASK API KEY (only last 4 visible)
-        const maskedKey = this.hardcodedApiKey
-          ? this.hardcodedApiKey.replace(/.(?=.{4})/g, "*")
-          : "N/A";
-
+      } else {
+        // API Logic
         try {
-          if (!this.props.sendQuery) {
-            throw new Error("API function not available");
-          }
+          const response = await axios.post(
+            "https://api.openai.com/v1/chat/completions",
+            {
+              model: "gpt-4o-mini",
+              store: true,
+              messages: [{ role: "user", content: inputValue }]
+            },
+            {
+              headers: {
+                Authorization:
+                  `Bearer API KEY' ,
+                "Content-Type": "application/json"
+              }
+            }
+          );
 
-          // Real API call
-          const response = await this.props.sendQuery(inputValue);
-
-          console.log("sendQuery returned:", response);
-
-          answer = response;
-        } 
-        catch (apiError) {
+          answer = response.data.choices?.[0]?.message?.content || "⚠️ No response received.";
+        } catch (apiError) {
           console.error("API ERROR:", apiError);
-
           answer =
             `⚠️ Unable to connect to API.\n` +
             `Please enable your API configuration.\n`;
@@ -127,7 +134,10 @@ handleSend = async () => {
       }));
     } catch {
       this.setState(state => ({
-        messages: [...state.messages, { speaker: "bot", text: "⚠️ Oops! Something went wrong." }],
+        messages: [
+          ...state.messages,
+          { speaker: "bot", text: "⚠️ Oops! Something went wrong." }
+        ],
         isSending: false
       }));
     }
@@ -148,22 +158,30 @@ handleSend = async () => {
 
   render() {
     return (
-      <div className="chatbot-container" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      <div
+        className="chatbot-container"
+        style={{ display: "flex", flexDirection: "column", height: "100%" }}
+      >
         <div className="chatbot-popup-header">
-            <span>Insights Assistant</span>
-            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          <span> <LuBot size = {20}/> Insights Assistant </span>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
             <button
-                className="contrast-toggle-btn"
-                onClick={toggleHighContrast}
-                title="Toggle High Contrast Mode"
-              >
-                {isHighContrast ? "🌙" : "☀️"}
-              </button>  
+              className="contrast-toggle-btn"
+              onClick={this.toggleHighContrast}
+              title="Toggle High Contrast Mode"
+            >
+              {this.state.isHighContrast ? "🌙" : "☀️"}
+            </button>
+          </div>
+        </div>
         <div className="messages">
           {this.state.messages.map((m, i) => (
             <div key={i} className={`message ${m.speaker}`}>
               {m.html ? (
-                <div className="message-content" dangerouslySetInnerHTML={{ __html: m.html }} />
+                <div
+                  className="message-content"
+                  dangerouslySetInnerHTML={{ __html: m.html }}
+                />
               ) : (
                 <span className="message-content">{m.text}</span>
               )}
@@ -171,7 +189,11 @@ handleSend = async () => {
           ))}
           {this.state.isSending && (
             <div className="message bot typing">
-              <span className="typing-dots"><i></i><i></i><i></i></span>
+              <span className="typing-dots">
+                <i></i>
+                <i></i>
+                <i></i>
+              </span>
             </div>
           )}
           <div ref={this.messagesEndRef} />
@@ -188,7 +210,10 @@ handleSend = async () => {
             data-placeholder="Ask a question or type a message"
             suppressContentEditableWarning={true}
           />
-          <button onClick={this.handleSend} disabled={this.state.isSending || !this.state.inputValue.trim()}>
+          <button
+            onClick={this.handleSend}
+            disabled={this.state.isSending || !this.state.inputValue.trim()}
+          >
             {this.state.isSending ? "Sending..." : "Send"}
           </button>
         </div>
@@ -198,4 +223,5 @@ handleSend = async () => {
 }
 
 export default ChatbotComponent;
+
 
