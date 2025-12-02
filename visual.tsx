@@ -16,7 +16,7 @@ export class Visual implements IVisual {
   constructor(options: VisualConstructorOptions) {
     this.target = options.element;
     this.reactRoot = ReactDOM.createRoot(this.target);
-    this.reactRoot.render(<ChatbotLauncher />);
+    this.reactRoot.render(<ChatbotComponent />);
   }
 
   public update(options: VisualUpdateOptions) {
